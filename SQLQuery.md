@@ -11,7 +11,7 @@
 7. [OUTPUT — "Biên nhận" sau khi thao tác dữ liệu](#7-output--biên-nhận-sau-khi-thao-tác-dữ-liệu)
 8. [INSERT INTO SELECT — Chèn từ bảng khác](#8-insert-into-select--chèn-từ-bảng-khác)
 9. [UPDATE — Cập nhật dữ liệu (DML)](#9-update--cập-nhật-dữ-liệu-dml)
-10. [DELETE — Xóa dữ liệu (DML)](#10-delete--xóa-dữ-liệu-dml)
+10. [Xóa dữ liệu — DELETE, TRUNCATE, DROP](#10-xóa-dữ-liệu--delete-truncate-drop)
 11. [DDL — Định nghĩa cấu trúc (CREATE, ALTER, DROP, TRUNCATE)](#11-ddl--định-nghĩa-cấu-trúc-create-alter-drop-truncate)
 12. [DML — Thao tác dữ liệu (SELECT, INSERT, UPDATE, DELETE)](#12-dml--thao-tác-dữ-liệu-select-insert-update-delete)
 
@@ -279,9 +279,17 @@ WHERE category = 'A';
 
 ---
 
-## 10. DELETE — Xóa dữ liệu (DML)
+## 10. Xóa dữ liệu — DELETE, TRUNCATE, DROP
 
-### 10.1. DELETE cơ bản
+### 10.1. DELETE (DML)
+
+Xóa dữ liệu các hàng trong bảng nhưng bảng và cấu trúc của nó vẫn được giữ nguyên.
+
+**Đặc điểm:**
+- Xóa từng hàng một → chậm hơn TRUNCATE
+- Kích hoạt Trigger
+- Có thể dùng `WHERE` để xóa có điều kiện
+- Có thể xóa dữ liệu trong bảng được tham chiếu bởi khóa ngoại nếu sử dụng cấu hình `ON DELETE CASCADE` hoặc xóa các bảng con trước
 
 ```sql
 -- Xóa có điều kiện
@@ -294,7 +302,7 @@ DELETE FROM table_name;
 
 > **Lưu ý:** Nếu không có `WHERE`, toàn bộ dữ liệu trong bảng sẽ bị xóa!
 
-### 10.2. DELETE TOP
+**DELETE TOP:**
 
 ```sql
 -- Xóa N dòng đầu tiên
@@ -302,7 +310,7 @@ DELETE TOP (5) FROM orders
 WHERE status = 'Cancelled';
 ```
 
-### 10.3. DELETE với JOIN
+**DELETE với JOIN:**
 
 ```sql
 -- Xóa dòng trong bảng A dựa trên điều kiện từ bảng B
@@ -312,7 +320,7 @@ INNER JOIN customers b ON a.customer_id = b.id
 WHERE b.status = 'Inactive';
 ```
 
-### 10.4. DELETE với OUTPUT
+**DELETE với OUTPUT:**
 
 ```sql
 -- Xem dòng vừa xóa
@@ -321,24 +329,47 @@ OUTPUT deleted.id, deleted.name, deleted.price
 WHERE price < 10;
 ```
 
-### 10.5. So sánh DELETE vs TRUNCATE vs DROP
+### 10.2. TRUNCATE (DDL)
+
+Xóa toàn bộ dữ liệu trong bảng nhanh chóng nhưng vẫn giữ nguyên cấu trúc bảng (schema), chỉ mục và ràng buộc.
+
+**Đặc điểm:**
+- Nhanh hơn DELETE (xóa toàn bộ trang dữ liệu thay vì từng hàng)
+- Không sử dụng `WHERE`
+- Không kích hoạt Trigger
+- Không thể thực hiện nếu bảng được tham chiếu bởi khóa ngoại
+- Reset IDENTITY về giá trị seed ban đầu
+
+```sql
+TRUNCATE TABLE table_name;
+```
+
+### 10.3. DROP (DDL)
+
+Xóa toàn bộ bảng khỏi CSDL bao gồm cả cấu trúc, chỉ mục và ràng buộc.
+
+```sql
+-- Xóa bảng
+DROP TABLE table_name;
+
+-- Xóa bảng nếu tồn tại (tránh lỗi)
+DROP TABLE IF EXISTS table_name;
+```
+
+### 10.4. So sánh DELETE vs TRUNCATE vs DROP
 
 | Tiêu chí | DELETE | TRUNCATE | DROP |
 |---|---|---|---|
 | Nhóm | **DML** | **DDL** | **DDL** |
 | Xóa gì | Dữ liệu (có WHERE) | Toàn bộ dữ liệu | Cả bảng + cấu trúc |
 | Giữ cấu trúc bảng | ✅ Có | ✅ Có | ❌ Không |
+| Giữ chỉ mục, ràng buộc | ✅ Có | ✅ Có | ❌ Không |
 | Dùng WHERE | ✅ Có | ❌ Không | ❌ Không |
 | Kích hoạt Trigger | ✅ Có | ❌ Không | ❌ Không |
 | Tốc độ | 🐢 Chậm (xóa từng hàng) | 🐇 Nhanh | 🐇 Nhanh |
 | Reset IDENTITY | ❌ Không | ✅ Có (reset về seed) | — |
 | Khóa ngoại (FK) | ✅ Được (nếu có CASCADE) | ❌ Không được nếu có FK | ❌ Không được nếu có FK |
 | Rollback | ✅ Có | ✅ Có (trong transaction) | ✅ Có (trong transaction) |
-
-> **Lưu ý:**
-> - `DELETE` xóa từng hàng → chậm nhưng linh hoạt, có trigger
-> - `TRUNCATE` xóa toàn bộ trang dữ liệu → nhanh, nhưng không WHERE được
-> - `DROP` xóa luôn bảng khỏi database
 
 ---
 
