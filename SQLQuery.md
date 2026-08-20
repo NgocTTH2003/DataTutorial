@@ -14,6 +14,7 @@
 10. [Xóa dữ liệu — DELETE, TRUNCATE, DROP](#10-xóa-dữ-liệu--delete-truncate-drop)
 11. [DDL — Định nghĩa cấu trúc (CREATE, ALTER, DROP, TRUNCATE)](#11-ddl--định-nghĩa-cấu-trúc-create-alter-drop-truncate)
 12. [DML — Thao tác dữ liệu (SELECT, INSERT, UPDATE, DELETE)](#12-dml--thao-tác-dữ-liệu-select-insert-update-delete)
+13. [Constraints — Ràng buộc](#13-constraints--ràng-buộc)
 
 ---
 
@@ -608,3 +609,192 @@ DELETE a FROM table_a a INNER JOIN table_b b ON a.id = b.id WHERE b.status = 'In
 > - `TRUNCATE` thuộc **DDL** (không phải DML) — vì nó thao tác ở cấp bảng, không xóa từng hàng
 > - `SELECT INTO` vừa có tính DML (copy data) vừa có tính DDL (tạo bảng mới)
 > - `OUTPUT` có thể dùng với cả INSERT, UPDATE, DELETE — xem mục 7
+---
+
+## 13. Constraints — Ràng buộc
+
+Constraints là các quy tắc áp dụng lên cột hoặc bảng để đảm bảo tính chính xác và toàn vẹn của dữ liệu.
+
+### 13.1. Tổng hợp 6 loại Constraints
+
+| Constraint | Mục đích | Cho phép NULL? | Số lượng / bảng |
+|---|---|---|---|
+| `PRIMARY KEY` | Duy nhất + không NULL | ❌ Không | Chỉ 1 |
+| `UNIQUE` | Duy nhất | ✅ Có (tối đa 1 NULL) | Nhiều |
+| `NOT NULL` | Không cho phép NULL | — | Nhiều |
+| `CHECK` | Kiểm tra điều kiện | — | Nhiều |
+| `DEFAULT` | Giá trị mặc định khi không chỉ định | — | Nhiều |
+| `FOREIGN KEY` | Tham chiếu bảng khác | ✅ Có | Nhiều |
+
+### 13.2. PRIMARY KEY — Khóa chính
+
+Mỗi bảng chỉ có **1** PRIMARY KEY. Giá trị phải **duy nhất** và **không được NULL**.
+
+```sql
+-- Cách 1: Khai báo inline (1 cột)
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    name NVARCHAR(100)
+);
+
+-- Cách 2: Khai báo cuối bảng (1 hoặc nhiều cột — composite key)
+CREATE TABLE order_details (
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    PRIMARY KEY (order_id, product_id)
+);
+
+-- Cách 3: Thêm sau bằng ALTER
+ALTER TABLE employees
+ADD CONSTRAINT pk_employee_id PRIMARY KEY (id);
+```
+
+> **Lưu ý:** PRIMARY KEY tự động tạo **Clustered Index** (mặc định).
+
+### 13.3. UNIQUE — Duy nhất
+
+Đảm bảo giá trị trong cột là duy nhất. Khác PRIMARY KEY ở chỗ **cho phép NULL** (tối đa 1 hàng NULL).
+
+```sql
+-- Khai báo khi tạo bảng
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    email VARCHAR(100) UNIQUE
+);
+
+-- Thêm sau bằng ALTER
+ALTER TABLE employees
+ADD CONSTRAINT uq_email UNIQUE (email);
+```
+
+### 13.4. NOT NULL — Không cho phép NULL
+
+Bắt buộc cột phải có giá trị, không được bỏ trống.
+
+```sql
+-- Khai báo khi tạo bảng
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    name NVARCHAR(100) NOT NULL,
+    email VARCHAR(100)              -- cho phép NULL (mặc định)
+);
+
+-- Thêm sau bằng ALTER
+ALTER TABLE employees
+ALTER COLUMN name NVARCHAR(100) NOT NULL;
+```
+
+### 13.5. CHECK — Kiểm tra điều kiện
+
+Chỉ cho phép giá trị thỏa mãn biểu thức Boolean.
+
+```sql
+-- Khai báo khi tạo bảng
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    age INT CHECK (age >= 18),
+    salary DECIMAL(18,2) CHECK (salary > 0)
+);
+
+-- Thêm sau bằng ALTER
+ALTER TABLE employees
+ADD CONSTRAINT chk_age CHECK (age >= 18);
+
+-- CHECK với nhiều điều kiện
+ALTER TABLE employees
+ADD CONSTRAINT chk_salary_range CHECK (salary >= 0 AND salary <= 1000000000);
+```
+
+### 13.6. DEFAULT — Giá trị mặc định
+
+Tự động gán giá trị khi INSERT mà không chỉ định cột đó.
+
+```sql
+-- Khai báo khi tạo bảng
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    status NVARCHAR(20) DEFAULT 'Active',
+    created_at DATETIME2 DEFAULT GETDATE()
+);
+
+-- Thêm sau bằng ALTER
+ALTER TABLE employees
+ADD CONSTRAINT df_status DEFAULT 'Active' FOR status;
+```
+
+> **Lưu ý:** Nếu INSERT có chỉ định giá trị cho cột thì DEFAULT bị bỏ qua. DEFAULT chỉ áp dụng khi cột không được nhắc đến trong INSERT.
+
+### 13.7. FOREIGN KEY — Khóa ngoại
+
+Tạo mối quan hệ giữa 2 bảng. Giá trị ở cột FK phải tồn tại trong cột PK/UNIQUE của bảng được tham chiếu.
+
+```sql
+-- Khai báo khi tạo bảng
+CREATE TABLE departments (
+    id INT PRIMARY KEY,
+    name NVARCHAR(100)
+);
+
+CREATE TABLE employees (
+    id INT PRIMARY KEY,
+    name NVARCHAR(100),
+    department_id INT,
+    FOREIGN KEY (department_id) REFERENCES departments(id)
+);
+
+-- Thêm sau bằng ALTER
+ALTER TABLE employees
+ADD CONSTRAINT fk_dept FOREIGN KEY (department_id) REFERENCES departments(id);
+```
+
+**Các hành vi khi xóa/cập nhật bản ghi cha (ON DELETE / ON UPDATE):**
+
+| Tùy chọn | Khi xóa/sửa bản ghi cha |
+|---|---|
+| `NO ACTION` | Lỗi — không cho xóa/sửa nếu có bản ghi con (mặc định) |
+| `CASCADE` | Tự động xóa/sửa bản ghi con theo |
+| `SET NULL` | Gán NULL cho cột FK ở bản ghi con |
+| `SET DEFAULT` | Gán giá trị DEFAULT cho cột FK ở bản ghi con |
+
+```sql
+-- Ví dụ: xóa department → tự động xóa employees trong department đó
+ALTER TABLE employees
+ADD CONSTRAINT fk_dept FOREIGN KEY (department_id)
+REFERENCES departments(id)
+ON DELETE CASCADE
+ON UPDATE CASCADE;
+
+-- Ví dụ: xóa department → gán NULL cho department_id của employees
+ALTER TABLE employees
+ADD CONSTRAINT fk_dept FOREIGN KEY (department_id)
+REFERENCES departments(id)
+ON DELETE SET NULL;
+```
+
+### 13.8. Xóa Constraints
+
+```sql
+-- Xóa bất kỳ constraint nào (PK, FK, UNIQUE, CHECK, DEFAULT)
+ALTER TABLE employees
+DROP CONSTRAINT constraint_name;
+
+-- Xem danh sách constraints của bảng
+SELECT * FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+WHERE TABLE_NAME = 'employees';
+```
+
+### 13.9. PRIMARY KEY vs UNIQUE — So sánh
+
+| Tiêu chí | PRIMARY KEY | UNIQUE |
+|---|---|---|
+| Số lượng / bảng | Chỉ 1 | Nhiều |
+| Cho phép NULL | ❌ Không | ✅ Có (tối đa 1 NULL) |
+| Tạo Index | Clustered (mặc định) | Non-clustered (mặc định) |
+| Mục đích | Định danh duy nhất cho mỗi hàng | Đảm bảo không trùng lặp |
+
+> **Lưu ý bài test:**
+> - Một bảng có thể có **0 hoặc 1** PRIMARY KEY, nhưng **nhiều** UNIQUE
+> - UNIQUE cho phép NULL nhưng chỉ **1 hàng NULL** (vì 2 NULL cũng bị coi là trùng trong SQL Server)
+> - FOREIGN KEY có thể tham chiếu đến cột PRIMARY KEY hoặc cột UNIQUE của bảng khác
+> - CHECK chỉ kiểm tra điều kiện cho **cùng 1 bảng**, không kiểm tra cross-table
