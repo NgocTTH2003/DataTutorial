@@ -597,14 +597,6 @@ Tham số phổ biến:
 
 ### 9.2 BULK INSERT
 
-Cú pháp:
-
-```
-BULK INSERT table_name
-FROM path_to_file
-WITH options;
-```
-
 Câu lệnh T-SQL để import file vào bảng — chạy trong SSMS.
 
 ```sql
@@ -636,6 +628,30 @@ BULK INSERT raw_doanh_thu_ev_power
 FROM 'C:\Data\thang2.csv'
 WITH (FIRSTROW = 2, FIELDTERMINATOR = ',', ROWTERMINATOR = '\n');
 ```
+
+### File được hỗ trợ import
+
+BULK INSERT chỉ đọc được file **plain text** — file nào mở bằng Notepad mà đọc được thì import được:
+
+| File | Hỗ trợ | Ghi chú |
+|------|--------|---------|
+| .csv | ✅ | Phổ biến nhất, dấu phân cách là dấu phẩy |
+| .txt | ✅ | Dấu phân cách tùy chỉnh |
+| .tsv | ✅ | Dấu phân cách là tab (`\t`) |
+| .dat | ✅ | Định dạng data thô |
+
+### File KHÔNG được hỗ trợ import
+
+File cần phần mềm riêng để mở thì BULK INSERT không đọc được — phải chuyển sang CSV trước:
+
+| File | Hỗ trợ | Cách xử lý |
+|------|--------|------------|
+| .xlsx / .xls | ❌ | Mở Excel → Save As → CSV |
+| .pdf | ❌ | Cần Python hoặc tool extract text |
+| .doc / .docx | ❌ | Cần Python hoặc tool extract text |
+| .json | ❌ | Dùng `OPENJSON()` trong T-SQL thay thế |
+| .xml | ❌ | Dùng `OPENXML()` trong T-SQL thay thế |
+| .parquet | ❌ | Cần Python hoặc tool chuyển đổi |
 
 ### So sánh BCP vs BULK INSERT
 
