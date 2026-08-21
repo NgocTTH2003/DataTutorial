@@ -4,6 +4,32 @@ Tài liệu tổng hợp kiến thức quản trị SQL Server — bao gồm mô
 
 ---
 
+## Mục lục
+
+1. [Basics — System Databases](#section-1-basics--system-databases)
+2. [Backup & Restore](#section-2-backup--restore)
+   - Recovery Model
+   - Backup Types
+   - Full Backup
+   - Differential Backup
+   - Transaction Log Backup
+3. [Managing Logins, Users, and Permissions](#section-3-managing-logins-users-and-permissions)
+   - Create Login / User
+   - Grant / Revoke Permissions
+   - Alter / Drop Login & User
+4. [Managing Roles](#section-4-managing-roles)
+   - Create / Alter / Drop Role
+5. [Database Mail](#section-5-database-mail)
+6. [Blocking & Deadlock](#section-6-blocking--deadlock)
+7. [Table Partitioning](#section-7-table-partitioning)
+8. [Database Snapshots & Contained Databases](#section-8-database-snapshots--contained-databases)
+9. [Import / Export Data](#section-9-import--export-data)
+   - BCP
+   - BULK INSERT
+10. [Database Encryption — TDE](#section-10-database-encryption--tde)
+
+---
+
 ## Section 1: Basics — System Databases
 
 SQL Server có 4 system database được tạo sẵn khi cài đặt:
