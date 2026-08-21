@@ -597,6 +597,14 @@ Tham số phổ biến:
 
 ### 9.2 BULK INSERT
 
+Cú pháp:
+
+```
+BULK INSERT table_name
+FROM path_to_file
+WITH options;
+```
+
 Câu lệnh T-SQL để import file vào bảng — chạy trong SSMS.
 
 ```sql
